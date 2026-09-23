@@ -2,107 +2,885 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard FEDER Ultramarin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇪🇺 Dashboard FEDER - Analyses Avancées</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 2rem; }
-        .header { background: linear-gradient(135deg, #003399, #0055A4); color: white;
-                  padding: 2rem; border-radius: 15px; text-align: center; margin-bottom: 2rem; }
-        .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin: 2rem 0; }
-        .card { background: white; padding: 1.5rem; border-radius: 15px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 5px solid #FFCC00; }
-        .card h4 { color: #666; font-size: 0.85rem; text-transform: uppercase; }
-        .card .value { font-size: 1.8rem; font-weight: bold; color: #003399; }
-        .chart { background: white; padding: 1.5rem; border-radius: 15px;
-                 box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin: 1.5rem 0; }
+        :root {
+            --eu-blue: #003399;
+            --eu-blue-light: #0055A4;
+            --eu-gold: #FFCC00;
+            --green: #28a745;
+            --red: #dc3545;
+            --orange: #fd7e14;
+            --purple: #764ba2;
+            --teal: #11998e;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--eu-blue) 0%, var(--eu-blue-light) 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 51, 153, 0.3);
+        }
+
+        .header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .header p { opacity: 0.95; font-size: 1rem; }
+
+        /* Tabs */
+        .tabs {
+            background: white;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            background: var(--light);
+            color: var(--dark);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: var(--eu-blue-light);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--eu-blue), var(--eu-blue-light));
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 51, 153, 0.4);
+        }
+
+        /* Main */
+        .main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-title {
+            color: var(--dark);
+            border-bottom: 3px solid var(--eu-blue);
+            padding-bottom: 0.5rem;
+            margin: 2rem 0 1.5rem 0;
+            font-size: 1.4rem;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, var(--eu-blue), var(--eu-blue-light));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-left: 5px solid var(--eu-gold);
+            transition: transform 0.3s;
+        }
+
+        .metric-card:hover { transform: translateY(-5px); }
+        .metric-card h4 { font-size: 0.85rem; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+        .metric-card .value { font-size: 1.8rem; font-weight: bold; }
+        .metric-card .subtitle { font-size: 0.8rem; opacity: 0.85; margin-top: 0.25rem; }
+
+        .metric-card.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .metric-card.orange { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .metric-card.purple { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .metric-card.gold { background: linear-gradient(135deg, #f6d365, #fda085); }
+
+        /* Charts */
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin: 1.5rem 0;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .chart-box {
+            background: white;
+            border-radius: 15px;
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            min-height: 400px;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin: 1rem 0;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg, var(--eu-blue), var(--eu-blue-light));
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .data-table td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        .data-table tr:hover { background: #f8f9fa; }
+
+        /* Progress bars */
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .progress-high { background: linear-gradient(90deg, #11998e, #38ef7d); }
+        .progress-medium { background: linear-gradient(90deg, #f6d365, #fda085); }
+        .progress-low { background: linear-gradient(90deg, #f093fb, #f5576c); }
+
+        /* Loading / Error */
+        .loading { text-align: center; padding: 3rem; font-size: 1.2rem; color: var(--eu-blue); }
+        .error { background: #f8d7da; color: #721c24; padding: 2rem; border-radius: 10px; text-align: center; margin: 2rem 0; }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .main { padding: 1rem; }
+            .tab-btn { padding: 0.5rem 1rem; font-size: 0.8rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🇪🇺 Dashboard FEDER Ultramarin</h1>
-        <p>Programmes DROM/COM 2014-2020 — Données réelles Cohesion Open Data</p>
-    </div>
 
-    <div class="metrics" id="metrics"></div>
+<header class="header">
+    <h1>🇪🇺 Dashboard FEDER — Analyses Avancées</h1>
+    <p>Taux d'absorption • Comparaison Métropole/DROM • Objectifs thématiques</p>
+</header>
 
-    <div class="chart"><div id="chart-funds" style="height:400px;"></div></div>
-    <div class="chart"><div id="chart-territoires" style="height:400px;"></div></div>
-    <div class="chart"><div id="chart-evolution" style="height:400px;"></div></div>
+<nav class="tabs">
+    <button class="tab-btn active" data-tab="absorption">📊 Taux d'absorption</button>
+    <button class="tab-btn" data-tab="comparison">🗺️ Métropole vs DROM</button>
+    <button class="tab-btn" data-tab="thematic">🎯 Objectifs thématiques</button>
+</nav>
 
-    <script>
-        // Données des 9 programmes ultramarins (budgets corrigés)
-        const programmes = [
-            { cci: '2014FR05M2OP001', territoire: 'Guadeloupe + St-Martin', fonds: ['ERDF', 'ESF'], ue: 60.15, total: 70.76 },
-            { cci: '2014FR05SFOP003', territoire: 'Guyane', fonds: ['ESF'], ue: 34.53, total: 46.69 },
-            { cci: '2014FR05SFOP004', territoire: 'Martinique', fonds: ['ESF'], ue: 59.86, total: 78.55 },
-            { cci: '2014FR05SFOP005', territoire: 'Réunion', fonds: ['ESF'], ue: 237.64, total: 297.05 },
-            { cci: '2014FR06RDRP001', territoire: 'Guadeloupe', fonds: ['EAFRD'], ue: 51.97, total: 60.18 },
-            { cci: '2014FR06RDRP002', territoire: 'Martinique', fonds: ['EAFRD'], ue: 62.13, total: 72.78 },
-            { cci: '2014FR06RDRP003', territoire: 'Guyane', fonds: ['EAFRD'], ue: 35.77, total: 42.08 },
-            { cci: '2014FR06RDRP004', territoire: 'Réunion', fonds: ['EAFRD'], ue: 108.66, total: 134.46 },
-            { cci: '2014FR06RDRP006', territoire: 'Mayotte', fonds: ['EAFRD'], ue: 21.23, total: 28.30 }
-        ];
+<main class="main">
+    <div id="loading" class="loading">⏳ Chargement des données...</div>
+    <div id="error" class="error" style="display:none;"></div>
 
-        // Métriques
-        const totalUE = programmes.reduce((s, p) => s + p.ue, 0);
-        const totalBudget = programmes.reduce((s, p) => s + p.total, 0);
-        const nbProgrammes = programmes.length;
-        const nbTerritoires = new Set(programmes.map(p => p.territoire.replace(' + St-Martin', ''))).size;
+    <!-- TAB 1 : Taux d'absorption -->
+    <section id="tab-absorption" class="tab-content active">
+        <h2 class="section-title">📊 Taux d'absorption par programme</h2>
+        <div class="metrics-grid" id="absorption-metrics"></div>
+        <div class="chart-grid">
+            <div class="chart-box"><div id="chart-absorption-bar" style="height:380px;"></div></div>
+            <div class="chart-box"><div id="chart-absorption-gauge" style="height:380px;"></div></div>
+        </div>
+        <h3 class="section-title">📋 Détail par programme</h3>
+        <div id="absorption-table"></div>
+    </section>
 
-        document.getElementById('metrics').innerHTML = `
-            <div class="card"><h4>💰 Contribution UE</h4><div class="value">${totalUE.toFixed(2)} M€</div></div>
-            <div class="card"><h4>💵 Budget Total</h4><div class="value">${totalBudget.toFixed(2)} M€</div></div>
-            <div class="card"><h4>📋 Programmes</h4><div class="value">${nbProgrammes}</div></div>
-            <div class="card"><h4>🗺️ Territoires</h4><div class="value">${nbTerritoires}</div></div>
+    <!-- TAB 2 : Métropole vs DROM -->
+    <section id="tab-comparison" class="tab-content">
+        <h2 class="section-title">🗺️ Comparaison Métropole vs DROM</h2>
+        <div class="metrics-grid" id="comparison-metrics"></div>
+        <div class="chart-grid">
+            <div class="chart-box"><div id="chart-comparison-bar" style="height:380px;"></div></div>
+            <div class="chart-box"><div id="chart-comparison-pie" style="height:380px;"></div></div>
+        </div>
+        <div class="chart-container">
+            <div id="chart-comparison-scatter" style="height:420px;"></div>
+        </div>
+        <h3 class="section-title">📋 Détail par type de territoire</h3>
+        <div id="comparison-table"></div>
+    </section>
+
+    <!-- TAB 3 : Objectifs thématiques -->
+    <section id="tab-thematic" class="tab-content">
+        <h2 class="section-title">🎯 Répartition par objectif thématique</h2>
+        <div class="chart-grid">
+            <div class="chart-box"><div id="chart-thematic-treemap" style="height:450px;"></div></div>
+            <div class="chart-box"><div id="chart-thematic-sunburst" style="height:450px;"></div></div>
+        </div>
+        <div class="chart-container">
+            <div id="chart-thematic-bar" style="height:420px;"></div>
+        </div>
+        <h3 class="section-title">📋 Détail par objectif</h3>
+        <div id="thematic-table"></div>
+    </section>
+</main>
+
+<script>
+// ============================================
+// CONFIGURATION
+// ============================================
+const CONFIG = {
+    dataFile: 'feder_ultramarin_complet.json',
+    // Fallback si le fichier n'existe pas
+    fallbackFiles: ['feder_ultramarin.json', 'feder_drom_complet.json', 'feder_manquant.json']
+};
+
+const plotlyConfig = { responsive: true, displayModeBar: true, displaylogo: false };
+const defaultLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    font: { family: 'Segoe UI, sans-serif', color: '#2c3e50' },
+    margin: { t: 50, r: 30, b: 60, l: 70 }
+};
+
+// Codes CCI DROM/COM
+const CCI_DROM = {
+    '2014FR16M2OP011': 'Guyane',
+    '2014FR16M2OP012': 'Mayotte',
+    '2014FR16M0OP011': 'Martinique',
+    '2014FR16RFOP007': 'La Réunion',
+    '2014FR05M2OP001': 'Guadeloupe + St-Martin',
+    '2014FR16M0OP009': 'Guadeloupe',
+    '2014FR05SFOP003': 'Guyane (FSE)',
+    '2014FR05SFOP004': 'Martinique (FSE)',
+    '2014FR05SFOP005': 'Réunion (FSE)',
+    '2014FR06RDRP001': 'Guadeloupe (FEADER)',
+    '2014FR06RDRP002': 'Martinique (FEADER)',
+    '2014FR06RDRP003': 'Guyane (FEADER)',
+    '2014FR06RDRP004': 'Réunion (FEADER)',
+    '2014FR06RDRP006': 'Mayotte (FEADER)'
+};
+
+// Labels des objectifs thématiques
+const TO_LABELS = {
+    '1': '🔬 Recherche & Innovation',
+    '2': '📡 TIC / Numérique',
+    '3': '🏢 Compétitivité PME',
+    '4': '🌱 Économie bas-carbone',
+    '5': '🌍 Climat & Risques',
+    '6': '♻️ Environnement & Ressources',
+    '7': '🚆 Transport & Énergie',
+    '8': '💼 Emploi durable',
+    '9': '🤝 Inclusion sociale',
+    '10': '🎓 Éducation & Formation',
+    '11': '🏛️ Administration efficace',
+    '13': '🛡️ Réparation crise COVID',
+    'TA': '🔧 Assistance technique',
+    'MULTI': '🎯 Objectifs multiples'
+};
+
+// ============================================
+// ÉTAT GLOBAL
+// ============================================
+let DATA = [];
+
+// ============================================
+// CHARGEMENT DES DONNÉES
+// ============================================
+async function loadData() {
+    const files = [CONFIG.dataFile, ...CONFIG.fallbackFiles];
+    
+    for (const file of files) {
+        try {
+            const response = await fetch(file);
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+                DATA = data;
+                console.log(`✅ Chargé ${file} : ${data.length} enregistrements`);
+                document.getElementById('loading').style.display = 'none';
+                renderAll();
+                return;
+            }
+        } catch (e) {
+            console.warn(`❌ ${file} non disponible`);
+        }
+    }
+    
+    document.getElementById('loading').style.display = 'none';
+    const err = document.getElementById('error');
+    err.style.display = 'block';
+    err.innerHTML = `<strong>Erreur :</strong> Aucun fichier de données trouvé.<br>
+        Assurez-vous que <code>feder_ultramarin_complet.json</code> est dans le même dossier.`;
+}
+
+// ============================================
+// TAB NAVIGATION
+// ============================================
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+    });
+});
+
+// ============================================
+// UTILITAIRES
+// ============================================
+function formatM€(value) {
+    if (!value || value === 0) return '0,00 M€';
+    if (value >= 1000) return (value/1000).toFixed(2) + ' Md€';
+    return value.toFixed(2) + ' M€';
+}
+
+function getProgrammes() {
+    const programmes = {};
+    DATA.forEach(x => {
+        const cci = x.cci;
+        if (!cci) return;
+        if (!programmes[cci]) {
+            programmes[cci] = {
+                cci,
+                title: x.title || cci,
+                funds: new Set(),
+                territoires: new Set(),
+                isDROM: cci in CCI_DROM,
+                eu_amount: 0,
+                total_amount: 0,
+                total_eligible_expenditure: 0,
+                by_year: {},
+                by_to: {}
+            };
+        }
+        const p = programmes[cci];
+        p.funds.add(x.fund);
+        
+        const eu = parseFloat(x.eu_amount) || 0;
+        const total = parseFloat(x.total_amount) || 0;
+        const exp = parseFloat(x.total_eligible_expenditure) || 0;
+        const year = x.year || '?';
+        const to = x.to || 'MULTI';
+        
+        p.eu_amount = Math.max(p.eu_amount, eu);
+        p.total_amount = Math.max(p.total_amount, total);
+        p.total_eligible_expenditure = Math.max(p.total_eligible_expenditure, exp);
+        
+        p.by_year[year] = (p.by_year[year] || 0) + exp;
+        p.by_to[to] = (p.by_to[to] || 0) + eu;
+    });
+    return Object.values(programmes);
+}
+
+// ============================================
+// RENDU GLOBAL
+// ============================================
+function renderAll() {
+    renderAbsorption();
+    renderComparison();
+    renderThematic();
+}
+
+// ============================================
+// TAB 1 : TAUX D'ABSORPTION
+// ============================================
+function renderAbsorption() {
+    const programmes = getProgrammes();
+    
+    // Calcul du taux d'absorption pour chaque programme
+    const absorptions = programmes.map(p => {
+        const taux = p.total_amount > 0 ? (p.total_eligible_expenditure / p.total_amount) * 100 : 0;
+        return {
+            cci: p.cci,
+            title: p.title,
+            territoire: CCI_DROM[p.cci] || 'Métropole',
+            isDROM: p.isDROM,
+            eu_amount: p.eu_amount,
+            total_amount: p.total_amount,
+            depense: p.total_eligible_expenditure,
+            taux: Math.min(taux, 150) // cap à 150% pour lisibilité
+        };
+    }).filter(p => p.total_amount > 0);
+    
+    // Métriques globales
+    const totalBudget = absorptions.reduce((s, p) => s + p.total_amount, 0);
+    const totalDepense = absorptions.reduce((s, p) => s + p.depense, 0);
+    const tauxGlobal = totalBudget > 0 ? (totalDepense / totalBudget) * 100 : 0;
+    const dromPrograms = absorptions.filter(p => p.isDROM);
+    const tauxDROM = dromPrograms.length > 0 
+        ? dromPrograms.reduce((s, p) => s + p.taux, 0) / dromPrograms.length 
+        : 0;
+    
+    document.getElementById('absorption-metrics').innerHTML = `
+        <div class="metric-card">
+            <h4>💰 Budget total</h4>
+            <div class="value">${formatM€(totalBudget/1e6)}</div>
+            <div class="subtitle">Tous programmes</div>
+        </div>
+        <div class="metric-card green">
+            <h4>✅ Dépenses réalisées</h4>
+            <div class="value">${formatM€(totalDepense/1e6)}</div>
+            <div class="subtitle">Montants certifiés</div>
+        </div>
+        <div class="metric-card ${tauxGlobal > 70 ? 'green' : tauxGlobal > 40 ? 'gold' : 'orange'}">
+            <h4>📊 Taux d'absorption global</h4>
+            <div class="value">${tauxGlobal.toFixed(1)}%</div>
+            <div class="subtitle">Dépenses / Budget</div>
+        </div>
+        <div class="metric-card purple">
+            <h4>🏝️ Taux moyen DROM</h4>
+            <div class="value">${tauxDROM.toFixed(1)}%</div>
+            <div class="subtitle">${dromPrograms.length} programmes</div>
+        </div>
+    `;
+    
+    // Top 15 par taux
+    const topAbsorption = [...absorptions].sort((a, b) => b.taux - a.taux).slice(0, 15);
+    
+    Plotly.newPlot('chart-absorption-bar', [{
+        x: topAbsorption.map(p => p.taux),
+        y: topAbsorption.map(p => p.title.length > 40 ? p.title.substring(0, 40) + '…' : p.title),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+            color: topAbsorption.map(p => p.taux),
+            colorscale: [[0, '#f5576c'], [0.5, '#f6d365'], [1, '#38ef7d']],
+            cmin: 0, cmax: 100
+        },
+        text: topAbsorption.map(p => p.taux.toFixed(1) + '%'),
+        textposition: 'outside',
+        hovertemplate: '<b>%{y}</b><br>Taux : %{x:.1f}%<extra></extra>'
+    }], {
+        ...defaultLayout,
+        title: 'Top 15 — Taux d\'absorption par programme',
+        xaxis: { title: 'Taux (%)', range: [0, 110], gridcolor: '#eee' },
+        yaxis: { automargin: true },
+        margin: { l: 280, t: 50, r: 30, b: 50 }
+    }, plotlyConfig);
+    
+    // Gauge du taux global
+    Plotly.newPlot('chart-absorption-gauge', [{
+        type: 'indicator',
+        mode: 'gauge+number+delta',
+        value: tauxGlobal,
+        number: { suffix: '%', font: { size: 40 } },
+        delta: { reference: 75, increasing: { color: '#28a745' }, decreasing: { color: '#dc3545' } },
+        gauge: {
+            axis: { range: [0, 100], tickwidth: 1, tickcolor: '#333' },
+            bar: { color: tauxGlobal > 70 ? '#28a745' : tauxGlobal > 40 ? '#ffc107' : '#dc3545' },
+            steps: [
+                { range: [0, 40], color: '#f8d7da' },
+                { range: [40, 70], color: '#fff3cd' },
+                { range: [70, 100], color: '#d4edda' }
+            ],
+            threshold: {
+                line: { color: 'red', width: 4 },
+                thickness: 0.75,
+                value: 75
+            }
+        },
+        title: { text: 'Taux d\'absorption global<br><sub>Objectif : 75%</sub>' }
+    }], { ...defaultLayout, height: 380 }, plotlyConfig);
+    
+    // Tableau détaillé
+    const tableData = absorptions
+        .filter(p => p.isDROM)
+        .sort((a, b) => b.taux - a.taux)
+        .map(p => `
+            <tr>
+                <td><strong>${p.territoire}</strong></td>
+                <td>${p.cci}</td>
+                <td>${formatM€(p.total_amount/1e6)}</td>
+                <td>${formatM€(p.depense/1e6)}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <div class="progress-bar" style="flex:1;">
+                            <div class="progress-fill ${p.taux > 70 ? 'progress-high' : p.taux > 40 ? 'progress-medium' : 'progress-low'}" style="width:${Math.min(p.taux, 100)}%"></div>
+                        </div>
+                        <strong style="min-width:55px;text-align:right;">${p.taux.toFixed(1)}%</strong>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    
+    document.getElementById('absorption-table').innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Territoire</th>
+                    <th>CCI</th>
+                    <th>Budget</th>
+                    <th>Dépensé</th>
+                    <th>Taux d'absorption</th>
+                </tr>
+            </thead>
+            <tbody>${tableData || '<tr><td colspan="5" style="text-align:center;padding:2rem;">Aucune donnée DROM disponible</td></tr>'}</tbody>
+        </table>
+    `;
+}
+
+// ============================================
+// TAB 2 : MÉTROPOLE VS DROM
+// ============================================
+function renderComparison() {
+    const programmes = getProgrammes();
+    
+    const dromPrograms = programmes.filter(p => p.isDROM);
+    const metroPrograms = programmes.filter(p => !p.isDROM);
+    
+    const sum = (arr, key) => arr.reduce((s, p) => s + p[key], 0);
+    
+    const dromBudget = sum(dromPrograms, 'total_amount');
+    const dromEU = sum(dromPrograms, 'eu_amount');
+    const dromDepense = sum(dromPrograms, 'total_eligible_expenditure');
+    const metroBudget = sum(metroPrograms, 'total_amount');
+    const metroEU = sum(metroPrograms, 'eu_amount');
+    const metroDepense = sum(metroPrograms, 'total_eligible_expenditure');
+    
+    const dromTaux = dromBudget > 0 ? (dromDepense / dromBudget) * 100 : 0;
+    const metroTaux = metroBudget > 0 ? (metroDepense / metroBudget) * 100 : 0;
+    
+    document.getElementById('comparison-metrics').innerHTML = `
+        <div class="metric-card orange">
+            <h4>🏝️ DROM — Contribution UE</h4>
+            <div class="value">${formatM€(dromEU/1e6)}</div>
+            <div class="subtitle">${dromPrograms.length} programmes</div>
+        </div>
+        <div class="metric-card purple">
+            <h4>🏙️ Métropole — Contribution UE</h4>
+            <div class="value">${formatM€(metroEU/1e6)}</div>
+            <div class="subtitle">${metroPrograms.length} programmes</div>
+        </div>
+        <div class="metric-card ${dromTaux > metroTaux ? 'green' : 'gold'}">
+            <h4>📊 Taux d'absorption DROM</h4>
+            <div class="value">${dromTaux.toFixed(1)}%</div>
+            <div class="subtitle">vs ${metroTaux.toFixed(1)}% métropole</div>
+        </div>
+        <div class="metric-card">
+            <h4>💡 Ratio DROM/Métropole</h4>
+            <div class="value">${metroEU > 0 ? ((dromEU/metroEU)*100).toFixed(1) : '—'}%</div>
+            <div class="subtitle">Part DROM dans le total</div>
+        </div>
+    `;
+    
+    // Bar chart comparatif
+    Plotly.newPlot('chart-comparison-bar', [
+        {
+            x: ['Budget total', 'Contribution UE', 'Dépenses réalisées'],
+            y: [dromBudget/1e6, dromEU/1e6, dromDepense/1e6],
+            name: '🏝️ DROM',
+            type: 'bar',
+            marker: { color: '#fd7e14' }
+        },
+        {
+            x: ['Budget total', 'Contribution UE', 'Dépenses réalisées'],
+            y: [metroBudget/1e6, metroEU/1e6, metroDepense/1e6],
+            name: '🏙️ Métropole',
+            type: 'bar',
+            marker: { color: '#764ba2' }
+        }
+    ], {
+        ...defaultLayout,
+        title: 'Comparaison Métropole vs DROM (M€)',
+        xaxis: { gridcolor: '#eee' },
+        yaxis: { title: 'Millions €', gridcolor: '#eee' },
+        barmode: 'group',
+        legend: { orientation: 'h', y: -0.15 }
+    }, plotlyConfig);
+    
+    // Pie chart
+    Plotly.newPlot('chart-comparison-pie', [{
+        labels: ['🏝️ DROM', '🏙️ Métropole'],
+        values: [dromEU, metroEU],
+        type: 'pie',
+        hole: 0.45,
+        marker: { colors: ['#fd7e14', '#764ba2'] },
+        textinfo: 'label+percent',
+        textposition: 'outside',
+        hovertemplate: '<b>%{label}</b><br>%{value:,.0f} €<br>%{percent}<extra></extra>'
+    }], {
+        ...defaultLayout,
+        title: 'Répartition de la contribution UE',
+        showlegend: false
+    }, plotlyConfig);
+    
+    // Scatter : budget vs taux d'absorption
+    const allProg = programmes.filter(p => p.total_amount > 0);
+    Plotly.newPlot('chart-comparison-scatter', [{
+        x: allProg.map(p => p.total_amount / 1e6),
+        y: allProg.map(p => Math.min((p.total_eligible_expenditure / p.total_amount) * 100, 150)),
+        text: allProg.map(p => p.title),
+        mode: 'markers',
+        type: 'scatter',
+        marker: {
+            size: allProg.map(p => Math.sqrt(p.eu_amount / 1e6) * 3),
+            color: allProg.map(p => p.isDROM ? '#fd7e14' : '#764ba2'),
+            opacity: 0.7,
+            line: { width: 1, color: 'white' }
+        },
+        hovertemplate: '<b>%{text}</b><br>Budget : %{x:.1f} M€<br>Taux : %{y:.1f}%<extra></extra>'
+    }], {
+        ...defaultLayout,
+        title: 'Budget vs Taux d\'absorption (taille = contribution UE)',
+        xaxis: { title: 'Budget total (M€)', gridcolor: '#eee', type: 'log' },
+        yaxis: { title: 'Taux d\'absorption (%)', gridcolor: '#eee' },
+        shapes: [{
+            type: 'line',
+            x0: 0, x1: 1, xref: 'paper',
+            y0: 75, y1: 75,
+            line: { color: '#28a745', width: 2, dash: 'dash' }
+        }],
+        annotations: [{
+            x: 1, y: 75, xref: 'paper', yref: 'y',
+            text: 'Objectif 75%',
+            showarrow: false,
+            xanchor: 'right',
+            font: { color: '#28a745', size: 11 }
+        }]
+    }, plotlyConfig);
+    
+    // Tableau
+    const tableRows = `
+        <tr>
+            <td><strong>🏝️ DROM</strong></td>
+            <td>${dromPrograms.length}</td>
+            <td>${formatM€(dromBudget/1e6)}</td>
+            <td>${formatM€(dromEU/1e6)}</td>
+            <td>${formatM€(dromDepense/1e6)}</td>
+            <td><strong>${dromTaux.toFixed(1)}%</strong></td>
+        </tr>
+        <tr>
+            <td><strong>🏙️ Métropole</strong></td>
+            <td>${metroPrograms.length}</td>
+            <td>${formatM€(metroBudget/1e6)}</td>
+            <td>${formatM€(metroEU/1e6)}</td>
+            <td>${formatM€(metroDepense/1e6)}</td>
+            <td><strong>${metroTaux.toFixed(1)}%</strong></td>
+        </tr>
+    `;
+    
+    document.getElementById('comparison-table').innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Nb programmes</th>
+                    <th>Budget total</th>
+                    <th>Contribution UE</th>
+                    <th>Dépenses</th>
+                    <th>Taux</th>
+                </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+        </table>
+    `;
+}
+
+// ============================================
+// TAB 3 : OBJECTIFS THÉMATIQUES
+// ============================================
+function renderThematic() {
+    // Agréger par objectif thématique
+    const byTO = {};
+    DATA.forEach(x => {
+        const to = x.to || 'MULTI';
+        const eu = parseFloat(x.eu_amount) || 0;
+        if (!byTO[to]) byTO[to] = { to, eu: 0, count: 0, byFund: {} };
+        byTO[to].eu += eu;
+        byTO[to].count++;
+        const fund = x.fund || 'Autre';
+        byTO[to].byFund[fund] = (byTO[to].byFund[fund] || 0) + eu;
+    });
+    
+    const toArray = Object.values(byTO)
+        .filter(t => t.eu > 0)
+        .sort((a, b) => b.eu - a.eu);
+    
+    // Treemap
+    const treemapLabels = ['Total'];
+    const treemapParents = [''];
+    const treemapValues = [toArray.reduce((s, t) => s + t.eu, 0)];
+    const treemapColors = ['#003399'];
+    
+    toArray.forEach(t => {
+        treemapLabels.push(TO_LABELS[t.to] || `Objectif ${t.to}`);
+        treemapParents.push('Total');
+        treemapValues.push(t.eu);
+        treemapColors.push('#0055A4');
+    });
+    
+    Plotly.newPlot('chart-thematic-treemap', [{
+        type: 'treemap',
+        labels: treemapLabels,
+        parents: treemapParents,
+        values: treemapValues,
+        marker: { colors: treemapColors },
+        textinfo: 'label+value+percent parent',
+        texttemplate: '<b>%{label}</b><br>%{value:,.0f} €<br>%{percentParent:.1%}',
+        hovertemplate: '<b>%{label}</b><br>%{value:,.0f} €<extra></extra>'
+    }], {
+        ...defaultLayout,
+        title: 'Répartition par objectif thématique (Treemap)',
+        margin: { t: 50, r: 20, b: 20, l: 20 }
+    }, plotlyConfig);
+    
+    // Sunburst par fonds
+    const sunburstLabels = ['Total'];
+    const sunburstParents = [''];
+    const sunburstValues = [toArray.reduce((s, t) => s + t.eu, 0)];
+    const sunburstColors = ['#003399'];
+    
+    toArray.forEach(t => {
+        const toLabel = TO_LABELS[t.to] || `Objectif ${t.to}`;
+        sunburstLabels.push(toLabel);
+        sunburstParents.push('Total');
+        sunburstValues.push(t.eu);
+        sunburstColors.push('#0055A4');
+        
+        Object.entries(t.byFund).forEach(([fund, val]) => {
+            if (val > 0) {
+                sunburstLabels.push(`${fund}`);
+                sunburstParents.push(toLabel);
+                sunburstValues.push(val);
+                sunburstColors.push(
+                    fund === 'ERDF' ? '#003399' :
+                    fund === 'ESF' ? '#28a745' :
+                    fund === 'EAFRD' ? '#fd7e14' : '#764ba2'
+                );
+            }
+        });
+    });
+    
+    Plotly.newPlot('chart-thematic-sunburst', [{
+        type: 'sunburst',
+        labels: sunburstLabels,
+        parents: sunburstParents,
+        values: sunburstValues,
+        marker: { colors: sunburstColors },
+        textinfo: 'label+percent parent',
+        hovertemplate: '<b>%{label}</b><br>%{value:,.0f} €<extra></extra>'
+    }], {
+        ...defaultLayout,
+        title: 'Objectifs thématiques par fonds (Sunburst)',
+        margin: { t: 50, r: 20, b: 20, l: 20 }
+    }, plotlyConfig);
+    
+    // Bar chart par fonds
+    const funds = ['ERDF', 'ESF', 'EAFRD'];
+    const fundColors = { ERDF: '#003399', ESF: '#28a745', EAFRD: '#fd7e14' };
+    
+    const barTraces = funds.map(fund => ({
+        x: toArray.map(t => TO_LABELS[t.to] || t.to),
+        y: toArray.map(t => (t.byFund[fund] || 0) / 1e6),
+        name: fund,
+        type: 'bar',
+        marker: { color: fundColors[fund] }
+    })).filter(t => t.y.some(v => v > 0));
+    
+    Plotly.newPlot('chart-thematic-bar', barTraces, {
+        ...defaultLayout,
+        title: 'Contribution UE par objectif thématique et fonds (M€)',
+        xaxis: { title: '', gridcolor: '#eee', tickangle: -30 },
+        yaxis: { title: 'Millions €', gridcolor: '#eee' },
+        barmode: 'stack',
+        legend: { orientation: 'h', y: -0.3 },
+        margin: { b: 140 }
+    }, plotlyConfig);
+    
+    // Tableau
+    const tableRows = toArray.map(t => {
+        const total = toArray.reduce((s, x) => s + x.eu, 0);
+        const pct = total > 0 ? (t.eu / total) * 100 : 0;
+        return `
+            <tr>
+                <td><strong>${TO_LABELS[t.to] || t.to}</strong></td>
+                <td>${t.count}</td>
+                <td>${formatM€(t.eu/1e6)}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <div class="progress-bar" style="flex:1;">
+                            <div class="progress-fill progress-high" style="width:${pct}%"></div>
+                        </div>
+                        <strong style="min-width:55px;text-align:right;">${pct.toFixed(1)}%</strong>
+                    </div>
+                </td>
+                <td>${Object.entries(t.byFund).map(([f, v]) => 
+                    `<span style="display:inline-block;padding:0.2rem 0.5rem;margin:0.1rem;border-radius:4px;background:${fundColors[f] || '#764ba2'};color:white;font-size:0.75rem;">${f}: ${(v/1e6).toFixed(1)} M€</span>`
+                ).join('')}</td>
+            </tr>
         `;
+    }).join('');
+    
+    document.getElementById('thematic-table').innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Objectif thématique</th>
+                    <th>Nb lignes</th>
+                    <th>Contribution UE</th>
+                    <th>Part</th>
+                    <th>Détail par fonds</th>
+                </tr>
+            </thead>
+            <tbody>${tableRows || '<tr><td colspan="5" style="text-align:center;padding:2rem;">Aucune donnée disponible</td></tr>'}</tbody>
+        </table>
+    `;
+}
 
-        // Graphique 1 : Répartition par fonds
-        const fondsUE = {};
-        programmes.forEach(p => {
-            p.fonds.forEach(f => {
-                fondsUE[f] = (fondsUE[f] || 0) + p.ue / p.fonds.length;
-            });
-        });
-
-        Plotly.newPlot('chart-funds', [{
-            labels: Object.keys(fondsUE),
-            values: Object.values(fondsUE),
-            type: 'pie', hole: 0.4,
-            marker: { colors: ['#003399', '#28a745', '#fd7e14'] }
-        }], { title: 'Répartition de la Contribution UE par Fonds', height: 400 });
-
-        // Graphique 2 : Budget par territoire
-        const parTerritoire = {};
-        programmes.forEach(p => {
-            const t = p.territoire.replace(' + St-Martin', '');
-            parTerritoire[t] = (parTerritoire[t] || 0) + p.ue;
-        });
-
-        Plotly.newPlot('chart-territoires', [{
-            x: Object.keys(parTerritoire),
-            y: Object.values(parTerritoire),
-            type: 'bar',
-            marker: { color: '#003399' },
-            text: Object.values(parTerritoire).map(v => v.toFixed(2) + ' M€'),
-            textposition: 'outside'
-        }], {
-            title: 'Contribution UE par Territoire (M€)',
-            xaxis: { title: '' }, yaxis: { title: 'M€' }, height: 400
-        });
-
-        // Graphique 3 : Budget par programme
-        Plotly.newPlot('chart-evolution', [{
-            x: programmes.map(p => p.cci),
-            y: programmes.map(p => p.ue),
-            type: 'bar',
-            marker: { color: programmes.map(p => p.fonds.includes('ESF') ? '#28a745' : '#fd7e14') },
-            text: programmes.map(p => p.ue.toFixed(2) + ' M€'),
-            textposition: 'outside'
-        }], {
-            title: 'Contribution UE par Programme (M€)',
-            xaxis: { tickangle: -45 }, yaxis: { title: 'M€' },
-            height: 400, margin: { b: 150 }
-        });
-    </script>
+// ============================================
+// INITIALISATION
+// ============================================
+document.addEventListener('DOMContentLoaded', loadData);
+window.addEventListener('resize', () => {
+    Plotly.Plots.resize(document.querySelectorAll('.js-plotly-plot'));
+});
+</script>
 </body>
 </html>
